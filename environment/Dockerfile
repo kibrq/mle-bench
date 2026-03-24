@@ -22,9 +22,11 @@ ENV ROOT_MAMBA_ROOT_PREFIX=/opt/micromamba
 
 RUN apt-get update && apt-get install -y \
     git \
+	git-lfs \
     build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 
 RUN useradd -m -d "${NONROOT_HOME}" -s /bin/bash "${NONROOT_USER}" \
     && mkdir -p /private \
@@ -53,8 +55,11 @@ RUN if [ "${INSTALL_HEAVY_DEPENDENCIES}" = "true" ]; then \
 USER root
 
 # Install benchmark code and grading dependencies into the private env.
-RUN MAMBA_ROOT_PREFIX=${ROOT_MAMBA_ROOT_PREFIX} micromamba run -n "${PRIVATE_ENV_NAME}" pip install --no-cache-dir git+https://github.com/kibrq/mle-bench.git \
-    && MAMBA_ROOT_PREFIX=${ROOT_MAMBA_ROOT_PREFIX} micromamba clean --all --yes
+COPY . /mlebench
+WORKDIR /mlebench
+RUN MAMBA_ROOT_PREFIX=${ROOT_MAMBA_ROOT_PREFIX} micromamba run -n "${PRIVATE_ENV_NAME}" pip install --no-cache-dir . && \
+	MAMBA_ROOT_PREFIX=${ROOT_MAMBA_ROOT_PREFIX} micromamba clean --all --yes && \
+	rm -r /mlebench
 
 # Reset DEBIAN_FRONTEND
 ENV DEBIAN_FRONTEND=
